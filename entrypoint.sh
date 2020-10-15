@@ -1,20 +1,19 @@
 #!/bin/bash
 
 GITHUB_PAT=${1}
-KUBECONFIG=${2}
-ORG=${3}
-INFRA_REPO=${4}
-PR_REF=${5}
-CLUSTER=${6}
-DOMAIN=${7}
-IMAGE=${8}
-TAG=${9}
+ORG=${2}
+INFRA_REPO=${3}
+PR_REF=${4}
+CLUSTER=${5}
+DOMAIN=${6}
+IMAGE=${7}
+TAG=${8}
 
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
 
-echo ${KUBECONFIG} | base64 -d > /kubeconfig.yaml
+aws eks update-kubeconfig --name ${CLUSTER} --kubeconfig=/kubeconfig.yaml
 echo ">>>> kubeconfig created"
 
 git config --local user.name "GitHub Action"

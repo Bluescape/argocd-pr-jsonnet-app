@@ -5,7 +5,7 @@ FROM itamarperez/jsonnet-ci
 COPY entrypoint.sh /entrypoint.sh
 
 # Install kubectl
-RUN apt-get update && apt-get install -y bash curl git
+RUN apt-get update && apt-get install -y bash curl git awscli
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/bin/kubectl
