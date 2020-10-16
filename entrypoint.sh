@@ -72,13 +72,13 @@ git add -A
 git commit -am "recompiled deployment manifests" || exit 0
 git push --set-upstream origin ${BRANCH}
 
-if [[ $(kubectl -n argocd get application ${NAMESPACE}) ]]; then
+if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
   echo ">>>> Application exist, OK!"
 else
   echo ">>>> Creating Application"
 fi
 
-kubectl -n argocd apply -f -<<EOF
+kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
 kind: Application
 apiVersion: argoproj.io/v1alpha1
 metadata:
