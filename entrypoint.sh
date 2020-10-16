@@ -1,21 +1,28 @@
 #!/bin/bash
 
 GITHUB_PAT=${1}
-KUBECONFIG=${2}
-ORG=${3}
-INFRA_REPO=${4}
-PR_REF=${5}
-CLUSTER=${6}
-DOMAIN=${7}
-IMAGE=${8}
-TAG=${9}
+ORG=${2}
+INFRA_REPO=${3}
+PR_REF=${4}
+CLUSTER=${5}
+DOMAIN=${6}
+IMAGE=${7}
+TAG=${8}
 
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
 
-echo ${KUBECONFIG} | base64 -d > /kubeconfig.yaml
+aws configure set region ${AWS_DEFAULT_REGION}
+aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+aws configure set role_arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole"
+aws configure set source_profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
+export KUBECONFIG=/kubeconfig
+
 echo ">>>> kubeconfig created"
+
 
 git config --local user.name "GitHub Action"
 git config --local user.email "action@github.com"
@@ -65,13 +72,13 @@ git add -A
 git commit -am "recompiled deployment manifests" || exit 0
 git push --set-upstream origin ${BRANCH}
 
-if [[ $(kubectl --kubeconfig=/kubeconfig.yaml -n argocd get application ${NAMESPACE}) ]]; then 
+if [[ $(kubectl -n argocd get application ${NAMESPACE}) ]]; then
   echo ">>>> Application exist, OK!"
 else
   echo ">>>> Creating Application"
 fi
 
-kubectl --kubeconfig=/kubeconfig.yaml -n argocd apply -f -<<EOF
+kubectl -n argocd apply -f -<<EOF
 kind: Application
 apiVersion: argoproj.io/v1alpha1
 metadata:
