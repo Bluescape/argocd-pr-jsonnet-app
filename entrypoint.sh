@@ -13,6 +13,8 @@ echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
 
+echo ${AWS_DEFAULT_REGION}
+echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
 aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
