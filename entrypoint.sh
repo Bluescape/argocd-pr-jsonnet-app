@@ -17,9 +17,9 @@ aws configure set region ${AWS_DEFAULT_REGION}
 aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 
-aws eks update-kubeconfig --name="alpha-b" \
-  --alias="alpha-b" \
-  --kubeconfig="~/.kube/config" \
+aws eks update-kubeconfig --name="${CLUSTER}" \
+  --alias="${CLUSTER}" \
+  --kubeconfig="/kubeconfig.yaml" \
   --role-arn "arn:aws:iam::429863676324:role/adminAssumeRole"
 
 aws eks update-kubeconfig --name ${CLUSTER} --kubeconfig=/kubeconfig.yaml
