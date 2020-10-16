@@ -72,7 +72,7 @@ git add -A
 git commit -am "recompiled deployment manifests" || exit 0
 git push --set-upstream origin ${BRANCH}
 
-if [[ $(kubectl --kubeconfig=/kubeconfig.yaml -n argocd get application ${NAMESPACE}) ]]; then
+if [[ $(kubectl -n argocd get application ${NAMESPACE}) ]]; then
   echo ">>>> Application exist, OK!"
 else
   echo ">>>> Creating Application"
