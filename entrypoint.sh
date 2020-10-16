@@ -8,6 +8,7 @@ CLUSTER=${5}
 DOMAIN=${6}
 IMAGE=${7}
 TAG=${8}
+AWS_ACCOUNT_ID=${9}
 
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
