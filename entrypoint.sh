@@ -20,7 +20,7 @@ aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws eks update-kubeconfig --name="${CLUSTER}" \
   --alias="${CLUSTER}" \
   --kubeconfig="/kubeconfig.yaml" \
-  --role-arn "arn:aws:iam::429863676324:role/adminAssumeRole"
+  --role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole"
 
 aws eks update-kubeconfig --name ${CLUSTER} --kubeconfig=/kubeconfig.yaml
 echo ">>>> kubeconfig created"
