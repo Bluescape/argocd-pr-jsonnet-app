@@ -22,7 +22,6 @@ aws eks update-kubeconfig --name="${CLUSTER}" \
   --kubeconfig="/kubeconfig.yaml" \
   --role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole"
 
-aws eks update-kubeconfig --name ${CLUSTER} --kubeconfig=/kubeconfig.yaml
 echo ">>>> kubeconfig created"
 
 git config --local user.name "GitHub Action"
