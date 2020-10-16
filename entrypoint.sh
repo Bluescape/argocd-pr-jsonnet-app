@@ -8,7 +8,10 @@ CLUSTER=${5}
 DOMAIN=${6}
 IMAGE=${7}
 TAG=${8}
-AWS_ACCOUNT_ID=${9}
+AWS_ACCESS_KEY_ID=${9}
+AWS_SECRET_ACCESS_KEY=${10}
+AWS_DEFAULT_REGION=${11}
+AWS_ORG_ID=${12}
 
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
@@ -19,9 +22,9 @@ echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
 aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-aws configure set role_arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole"
+aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 export KUBECONFIG=/kubeconfig
 
 echo ">>>> kubeconfig created"
