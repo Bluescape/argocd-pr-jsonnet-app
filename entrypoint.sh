@@ -76,6 +76,7 @@ git add -A
 # this will happan if you running a deployment manually for a specific commit 
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
+echo ">>> git push --set-upstream urigin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
 
 if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
