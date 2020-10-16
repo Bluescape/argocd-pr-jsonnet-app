@@ -13,6 +13,15 @@ echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
 
+aws configure set region ${AWS_DEFAULT_REGION}
+aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+
+aws eks update-kubeconfig --name="alpha-b" \
+  --alias="alpha-b" \
+  --kubeconfig="~/.kube/config" \
+  --role-arn "arn:aws:iam::429863676324:role/adminAssumeRole"
+
 aws eks update-kubeconfig --name ${CLUSTER} --kubeconfig=/kubeconfig.yaml
 echo ">>>> kubeconfig created"
 
