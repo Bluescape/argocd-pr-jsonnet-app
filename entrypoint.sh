@@ -98,7 +98,7 @@ spec:
   project: default
   source:
     path: jsonnet/${ORG}/clusters/${CLUSTER}/manifests
-    repoURL: https://github.com/${ORG}/${INFRA_REPO}
+    repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
     targetRevision: ${BRANCH}
   syncPolicy:
     automated: {}
