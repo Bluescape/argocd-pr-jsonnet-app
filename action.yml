@@ -25,14 +25,21 @@ inputs:
   tag:
     description: 'docker image tag for the compiled application manifets'
     required: true
+  aws_access_key_id:
+    description: 'AWS_ACCESS_KEY_ID'
+    required: true
+  aws_secret_access_key:
+    description: 'AWS_SECRET_ACCESS_KEY'
+    required: true
+  aws_default_region:
+    description: 'AWS_DEFAULT_REGION'
+    required: true
+  aws_org_id:
+    description: 'AWS_ORG_ID'
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  env:
-    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-    AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   args:
     - ${{ inputs.github-pat }}
     - ${{ inputs.org }}
@@ -42,3 +49,7 @@ runs:
     - ${{ inputs.domain }}
     - ${{ inputs.image }}
     - ${{ inputs.tag }}
+    - ${{ inputs.aws_access_key_id }}
+    - ${{ inputs.aws_secret_access_key }}
+    - ${{ inputs.aws_default_region }}
+    - ${{ inputs.aws_org_id }}

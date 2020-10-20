@@ -8,17 +8,23 @@ CLUSTER=${5}
 DOMAIN=${6}
 IMAGE=${7}
 TAG=${8}
+AWS_ACCESS_KEY_ID=${9}
+AWS_SECRET_ACCESS_KEY=${10}
+AWS_DEFAULT_REGION=${11}
+AWS_ORG_ID=${12}
 
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
 
+echo ${AWS_DEFAULT_REGION}
+echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
 aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-aws configure set role_arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole"
+aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 export KUBECONFIG=/kubeconfig
 
 echo ">>>> kubeconfig created"
@@ -70,15 +76,16 @@ git add -A
 # this will happan if you running a deployment manually for a specific commit 
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
+echo ">>> git push --set-upstream urigin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
 
-if [[ $(kubectl -n argocd get application ${NAMESPACE}) ]]; then
+if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
   echo ">>>> Application exist, OK!"
 else
   echo ">>>> Creating Application"
 fi
 
-kubectl -n argocd apply -f -<<EOF
+kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
 kind: Application
 apiVersion: argoproj.io/v1alpha1
 metadata:
@@ -91,7 +98,7 @@ spec:
   project: default
   source:
     path: jsonnet/${ORG}/clusters/${CLUSTER}/manifests
-    repoURL: https://github.com/${ORG}/${INFRA_REPO}
+    repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
     targetRevision: ${BRANCH}
   syncPolicy:
     automated: {}
