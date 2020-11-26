@@ -64,12 +64,18 @@ elif [[ ${PR_REF} =~ ${REGEX} ]]; then
 
 else
   echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
-  exit 0
+  exit 1
 fi
 
 ## compile manifests and add changes to git
 cd jsonnet/${ORG}
-CLUSTER=${CLUSTER} DOMAIN=${DOMAIN} NAMESPACE=${NAMESPACE} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh
+if CLUSTER=${CLUSTER} DOMAIN=${DOMAIN} NAMESPACE=${NAMESPACE} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+    echo "Compile succeeded"
+else
+    echo "Compile failed"
+    exit 1
+fi
+
 git add -A
           
 ## If there is nothing to commit exit without fail to continue
