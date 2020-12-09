@@ -67,7 +67,7 @@ elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
   export NAMESPACE=staging
   export RELEASE_NO=latest
   export BRANCH=master
-  git checkout master
+  git checkout ${BRANCH} 
 ##
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
@@ -128,7 +128,7 @@ EOF
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   compileManifest ${CLUSTER} ${NAMESPACE}
-  # deployManifest ${cluster} ${namespace} 
+  deployManifest ${cluster} ${namespace} 
 else  
   clusters=`cat images-auto-sync.json`
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
@@ -136,11 +136,11 @@ else
       cluster=$(getValue ${row} '.cluster')
       namespace=$(getValue ${row} '.namespace')
       release=$(getValue ${row} '.release')
-      echo "<<<< Auto deployt  Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Namespace=${namespace} >>>>"
+     
       if [[ ${CLUSTER} = ${environment} ]];  then
       # todo: filter with release & tag compare
        if [[ ${RELEASE_NO} = ${release} ]];  then
-          echo "<<<< Auto deployt  Cluester=${cluster}  Namespace=${namespace} >>>>"
+           echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Namespace=${namespace} >>>>"
           compileManifest ${cluster} ${namespace} 
           # deployManifest ${cluster} ${namespace} 
         fi
@@ -155,7 +155,7 @@ git add -A
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
 echo ">>> git push --set-upstream origin ${BRANCH}"
-git push --set-upstream origin auto-sync-image
+git push --set-upstream origin ${BRANCH}
 
 echo ">>> Completed"
 
