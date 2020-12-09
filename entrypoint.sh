@@ -81,7 +81,7 @@ else
   exit 1
 fi
 
-
+# need to remove after infra  merge
 git checkout  auto-sync-image
 
 getValue(){
