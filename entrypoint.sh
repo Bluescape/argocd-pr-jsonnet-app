@@ -16,8 +16,8 @@ AWS_ORG_ID=${12}
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
-ENVIRONMENT=alpha
-TAG=latest
+ENVIRONMENT=pre-prod
+TAG=latest-release
 echo "ENV ${ENVIRONMENT}"
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
@@ -139,7 +139,7 @@ git add -A
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
 echo ">>> git push --set-upstream origin ${BRANCH}"
-git push --set-upstream origin safi
+git push --set-upstream origin auto-sync-image
 
 echo ">>> Completed"
 
