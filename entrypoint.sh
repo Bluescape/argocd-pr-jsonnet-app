@@ -16,7 +16,9 @@ AWS_ORG_ID=${12}
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
-
+ENVIRONMENT=alpha
+TAG=latest
+echo "ENV ${ENVIRONMENT}"
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
