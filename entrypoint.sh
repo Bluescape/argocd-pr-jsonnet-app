@@ -28,6 +28,7 @@ aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
+
 if [[ ${CLUSTER} = 'pre-prod' ]];  then
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="pre-prod-b" --kubeconfig /kubeconfig --profile default
 else
@@ -50,32 +51,36 @@ echo "domain ${DOMAIN}"
 echo "image ${IMAGE}:${TAG}"
 
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
+export ON_DEMAND_INSTANCE=false
+#Tag for relase
+if [[ ${PR_REF} =~ ^refs/tags/*$ ]]; then
+  export BRANCH=master
+  git checkout ${BRANCH} 
+  TAG=${PR_REF#refs/*/}
+  export TAG="${TAG//\//-}-release"
+# Deploy to staging if branch is develop, release, main or master
+# Note: infrastrucure branch is using master  
+elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
+  export NAMESPACE=staging
+  export BRANCH=master
+  git checkout master
+##
+# checking if this is a feature branch or release
+elif [[ ${PR_REF} =~ ${REGEX} ]]; then
+  ##
+  # If branch does not exist create it
+  export BRANCH=${PR_REF}
+  git checkout ${BRANCH} || git checkout -b ${BRANCH}
 
-## Deploy to staging if branch is develop, release, main or master
-## Note: infrastrucure branch is using master
-# if [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
-#   export NAMESPACE=staging
-#   export BRANCH=master
-#   git checkout master
+  ##
+  # set namespace as jira issue id extracted from branch name and make sure it is lowercase
+  export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
+  export ON_DEMAND_INSTANCE=true
+else
+  echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
+  exit 1
+fi
 
-# ##
-# # checking if this is a feature branch or release
-# elif [[ ${PR_REF} =~ ${REGEX} ]]; then
-#   ##
-#   # If branch does not exist create it
-#   export BRANCH=${PR_REF}
-#   git checkout ${BRANCH} || git checkout -b ${BRANCH}
-
-#   ##
-#   # set namespace as jira issue id extracted from branch name and make sure it is lowercase
-#   export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
-
-# else
-#   echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
-#   exit 1
-# fi
-
-TAG=sync
 
 git checkout  auto-sync-image
 
@@ -117,9 +122,9 @@ EOF
 }
 
 
-if [[ ${CLUSTER} = 'ondemand' ]];  then
+if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   compileManifest ${CLUSTER} ${NAMESPACE}
-  #  deployManifest k
+  # deployManifest ${cluster} ${namespace} 
 else  
   clusters=`cat images-auto-sync.json`
    echo "${clusters}"
@@ -130,7 +135,7 @@ else
       namespace=$(getValue ${row} '.namespace')
       if [[ ${CLUSTER} = ${environment} ]];  then
           compileManifest ${cluster} ${namespace} 
-          # deployManifest()
+          # deployManifest ${cluster} ${namespace} 
       fi
   done
 fi  
@@ -142,7 +147,7 @@ git add -A
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
 echo ">>> git push --set-upstream origin ${BRANCH}"
-git push --set-upstream origin auto-sync-image
+git push --set-upstream origin auto-sync-image-test
 
 echo ">>> Completed"
 
