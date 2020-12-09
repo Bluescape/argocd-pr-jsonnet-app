@@ -117,9 +117,11 @@ if [[ ${ENVIRONMENT} = 'ondemand' ]];  then
   #  deployManifest k
 else  
   clusters=`cat images-auto-sync.json`
+   echo "${clusters}"
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
       cluster=$(getValue ${row} '.cluster')
+      echo ${ENVIRONMENT} ${environment}
       namespace=$(getValue ${row} '.namespace')
       if [[ ${ENVIRONMENT} = ${environment} ]];  then
           compileManifest ${cluster} ${namespace} 
