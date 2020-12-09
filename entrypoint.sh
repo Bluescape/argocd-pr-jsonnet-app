@@ -29,8 +29,8 @@ aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
 
-if [[ ${CLUSTER} = 'pre-prod' ]];  then
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="pre-prod-b" --kubeconfig /kubeconfig --profile default
+if [[ ${CLUSTER} = 'preprod' ]];  then
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="preprod-b" --kubeconfig /kubeconfig --profile default
 else
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 fi
@@ -127,11 +127,10 @@ if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   # deployManifest ${cluster} ${namespace} 
 else  
   clusters=`cat images-auto-sync.json`
-   echo "${clusters}"
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
       cluster=$(getValue ${row} '.cluster')
-      echo ${CLUSTER} ${environment}
+    echo "<<<< Auto deployt  Cluester=${cluster}  Namespace=${namespace} >>>>"
       namespace=$(getValue ${row} '.namespace')
       if [[ ${CLUSTER} = ${environment} ]];  then
           compileManifest ${cluster} ${namespace} 
