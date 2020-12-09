@@ -13,6 +13,9 @@ AWS_SECRET_ACCESS_KEY=${10}
 AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
 
+echo "Env clu= ${CLUSTER}, ref= ${PR_REF} tag= ${TAG}"
+
+
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
@@ -72,7 +75,7 @@ REGEX="[a-zA-Z]+-[0-9]{1,5}"
 #   exit 1
 # fi
 
-TAG=rc1
+TAG=sync
 
 git checkout  auto-sync-image
 
