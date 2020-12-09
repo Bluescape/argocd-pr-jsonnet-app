@@ -54,13 +54,13 @@ REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
 
 # Tag for relase
-if [[ ${PR_REF} =~ ^refs/tags/*$ ]]; then
+if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
   export BRANCH=master
   git checkout ${BRANCH} 
   TAG=${PR_REF#refs/*/}
   export TAG="${TAG//\//-}-release"
-  export RELEASE_NO=`echo ${R} | awk -F"-" '{print $1}'`
-  export RC_NO=`echo ${R} | awk -F"-" '{print $2}'`
+  export RELEASE_NO=`echo ${PR_REF} | awk -F"-" '{print $1}'`
+  export RC_NO=`echo ${PR_REF} | awk -F"-" '{print $2}'`
 # Deploy to staging if branch is develop, release, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
