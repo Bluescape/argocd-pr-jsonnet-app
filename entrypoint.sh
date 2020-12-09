@@ -82,8 +82,8 @@ else
   exit 1
 fi
 
-# need to remove after infra  merge
-git checkout  auto-sync-image
+# # need to remove after infra  merge
+# git checkout  auto-sync-image
 
 getValue(){
     echo ${1} | base64 --decode | jq -r ${2}
