@@ -81,14 +81,12 @@ getValue(){
 cd jsonnet/${ORG}
 
 compileManifest(){
-
-if CLUSTER=${cluster} DOMAIN=${DOMAIN} NAMESPACE=${namespace} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
-            echo "Compile succeeded ${cluster}-${namespace}" 
-        if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
-          echo ">>>> Application exist, OK!"
-        else
-          echo ">>>> Creating Application"
-        fi
+if CLUSTER=${1} DOMAIN=${DOMAIN} NAMESPACE=${2} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+    echo "Compile succeeded"
+else
+    echo "Compile failed"
+    exit 1
+fi 
 }
 
 
