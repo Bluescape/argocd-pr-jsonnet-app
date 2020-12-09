@@ -30,7 +30,7 @@ aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
 
 if [[ ${CLUSTER} = 'preprod' ]];  then
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="preprod-b" --kubeconfig /kubeconfig --profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="stg2" --kubeconfig /kubeconfig --profile default
 else
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 fi
@@ -52,16 +52,20 @@ echo "image ${IMAGE}:${TAG}"
 
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
-#Tag for relase
+
+# Tag for relase
 if [[ ${PR_REF} =~ ^refs/tags/*$ ]]; then
   export BRANCH=master
   git checkout ${BRANCH} 
   TAG=${PR_REF#refs/*/}
   export TAG="${TAG//\//-}-release"
+  export RELEASE_NO=`echo ${R} | awk -F"-" '{print $1}'`
+  export RC_NO=`echo ${R} | awk -F"-" '{print $2}'`
 # Deploy to staging if branch is develop, release, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
   export NAMESPACE=staging
+  export RELEASE_NO=latest
   export BRANCH=master
   git checkout master
 ##
@@ -130,11 +134,16 @@ else
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
       cluster=$(getValue ${row} '.cluster')
-    echo "<<<< Auto deployt  Cluester=${cluster}  Namespace=${namespace} >>>>"
       namespace=$(getValue ${row} '.namespace')
+      release=$(getValue ${row} '.release')
+      echo "<<<< Auto deployt  Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Namespace=${namespace} >>>>"
       if [[ ${CLUSTER} = ${environment} ]];  then
+      # todo: filter with release & tag compare
+       if [[ ${RELEASE_NO} = ${release} ]];  then
+          echo "<<<< Auto deployt  Cluester=${cluster}  Namespace=${namespace} >>>>"
           compileManifest ${cluster} ${namespace} 
           # deployManifest ${cluster} ${namespace} 
+        fi
       fi
   done
 fi  
@@ -146,7 +155,7 @@ git add -A
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
 echo ">>> git push --set-upstream origin ${BRANCH}"
-git push --set-upstream origin auto-sync-image-test
+git push --set-upstream origin auto-sync-image
 
 echo ">>> Completed"
 
