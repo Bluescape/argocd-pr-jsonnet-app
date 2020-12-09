@@ -124,10 +124,6 @@ else
       if [[ ${ENVIRONMENT} = ${environment} ]];  then
           compileManifest ${cluster} ${namespace} 
           # deployManifest()
-          else
-              echo "Compile failed"
-              exit 1
-          fi
       fi
   done
 fi  
