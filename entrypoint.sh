@@ -4,7 +4,7 @@ GITHUB_PAT=${1}
 ORG=${2}
 INFRA_REPO=${3}
 PR_REF=${4}
-ENVIRONMENT=${5}
+CLUSTER=${5}
 DOMAIN=${6}
 IMAGE=${7}
 TAG=${8}
@@ -16,9 +16,8 @@ AWS_ORG_ID=${12}
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
-ENVIRONMENT=pre-prod
-TAG=latest-release
-echo "ENV ${ENVIRONMENT}"
+
+
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
@@ -26,7 +25,7 @@ aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
-if [[ ${ENVIRONMENT} = 'pre-prod' ]];  then
+if [[ ${CLUSTER} = 'pre-prod' ]];  then
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="pre-prod-b" --kubeconfig /kubeconfig --profile default
 else
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
@@ -73,6 +72,7 @@ REGEX="[a-zA-Z]+-[0-9]{1,5}"
 #   exit 1
 # fi
 
+TAG=rc1
 
 git checkout  auto-sync-image
 
@@ -114,8 +114,8 @@ EOF
 }
 
 
-if [[ ${ENVIRONMENT} = 'ondemand' ]];  then
-  compileManifest ${ENVIRONMENT} ${NAMESPACE}
+if [[ ${CLUSTER} = 'ondemand' ]];  then
+  compileManifest ${CLUSTER} ${NAMESPACE}
   #  deployManifest k
 else  
   clusters=`cat images-auto-sync.json`
@@ -123,9 +123,9 @@ else
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
       cluster=$(getValue ${row} '.cluster')
-      echo ${ENVIRONMENT} ${environment}
+      echo ${CLUSTER} ${environment}
       namespace=$(getValue ${row} '.namespace')
-      if [[ ${ENVIRONMENT} = ${environment} ]];  then
+      if [[ ${CLUSTER} = ${environment} ]];  then
           compileManifest ${cluster} ${namespace} 
           # deployManifest()
       fi
