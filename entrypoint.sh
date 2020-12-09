@@ -4,7 +4,7 @@ GITHUB_PAT=${1}
 ORG=${2}
 INFRA_REPO=${3}
 PR_REF=${4}
-CLUSTER=${5}
+ENVIRONMENT=${5}
 DOMAIN=${6}
 IMAGE=${7}
 TAG=${8}
@@ -24,7 +24,11 @@ aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
+if [[ ${ENVIRONMENT} = 'pre-prod' ]];  then
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="pre-prod-b" --kubeconfig /kubeconfig --profile default
+else
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
+fi
 export KUBECONFIG=/kubeconfig
 
 echo ">>>> kubeconfig created"
@@ -67,14 +71,65 @@ else
   exit 1
 fi
 
-## compile manifests and add changes to git
+getValue(){
+    echo ${1} | base64 --decode | jq -r ${2}
+}
+
 cd jsonnet/${ORG}
-if CLUSTER=${CLUSTER} DOMAIN=${DOMAIN} NAMESPACE=${NAMESPACE} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
-    echo "Compile succeeded"
-else
-    echo "Compile failed"
-    exit 1
-fi
+
+compileManifest(){
+
+if CLUSTER=${cluster} DOMAIN=${DOMAIN} NAMESPACE=${namespace} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+            echo "Compile succeeded ${cluster}-${namespace}" 
+        if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
+          echo ">>>> Application exist, OK!"
+        else
+          echo ">>>> Creating Application"
+        fi
+}
+
+
+deployManifest(){
+kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
+        kind: Application
+        apiVersion: argoproj.io/v1alpha1
+        metadata:
+          name: ${2}
+          namespace: argocd
+        spec:
+          destination:
+            namespace: ${2}
+            server: 'https://kubernetes.default.svc'
+          project: default
+          source:
+            path: jsonnet/${ORG}/clusters/${1}/manifests
+            repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
+            targetRevision: ${BRANCH}
+          syncPolicy:
+            automated: {}
+EOF
+}
+
+
+if [[ ${ENVIRONMENT} = 'ondemand' ]];  then
+  compileManifest ${ENVIRONMENT} ${NAMESPACE}
+  #  deployManifest k
+else  
+  clusters=`cat images-auto-sync.json`
+  for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
+      environment=$(getValue ${row} '.environment')
+      cluster=$(getValue ${row} '.cluster')
+      namespace=$(getValue ${row} '.namespace')
+      if [[ ${ENVIRONMENT} = ${environment} ]];  then
+          compileManifest ${cluster} ${namespace} 
+          # deployManifest()
+          else
+              echo "Compile failed"
+              exit 1
+          fi
+      fi
+  done
+fi  
 
 git add -A
           
@@ -82,30 +137,8 @@ git add -A
 # this will happan if you running a deployment manually for a specific commit 
 # so there will be no changes in the compiled manifests since no new docker image created
 git commit -am "recompiled deployment manifests" || exit 0
-echo ">>> git push --set-upstream urigin ${BRANCH}"
-git push --set-upstream origin ${BRANCH}
+echo ">>> git push --set-upstream origin ${BRANCH}"
+git push --set-upstream origin safi
 
-if [[ $(kubectl --kubeconfig=${KUBECONFIG} -n argocd get application ${NAMESPACE}) ]]; then
-  echo ">>>> Application exist, OK!"
-else
-  echo ">>>> Creating Application"
-fi
+echo ">>> Completed"
 
-kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
-kind: Application
-apiVersion: argoproj.io/v1alpha1
-metadata:
-  name: ${NAMESPACE}
-  namespace: argocd
-spec:
-  destination:
-    namespace: ${NAMESPACE}
-    server: 'https://kubernetes.default.svc'
-  project: default
-  source:
-    path: jsonnet/${ORG}/clusters/${CLUSTER}/manifests
-    repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
-    targetRevision: ${BRANCH}
-  syncPolicy:
-    automated: {}
-EOF
