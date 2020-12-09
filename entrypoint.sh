@@ -13,13 +13,10 @@ AWS_SECRET_ACCESS_KEY=${10}
 AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
 
-echo "Env clu= ${CLUSTER}, ref= ${PR_REF} tag= ${TAG}"
-
-
+echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
 cd infrastructure
-
 
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
