@@ -49,27 +49,30 @@ REGEX="[a-zA-Z]+-[0-9]{1,5}"
 
 ## Deploy to staging if branch is develop, release, main or master
 ## Note: infrastrucure branch is using master
-if [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
-  export NAMESPACE=staging
-  export BRANCH=master
-  git checkout master
+# if [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
+#   export NAMESPACE=staging
+#   export BRANCH=master
+#   git checkout master
 
-##
-# checking if this is a feature branch or release
-elif [[ ${PR_REF} =~ ${REGEX} ]]; then
-  ##
-  # If branch does not exist create it
-  export BRANCH=${PR_REF}
-  git checkout ${BRANCH} || git checkout -b ${BRANCH}
+# ##
+# # checking if this is a feature branch or release
+# elif [[ ${PR_REF} =~ ${REGEX} ]]; then
+#   ##
+#   # If branch does not exist create it
+#   export BRANCH=${PR_REF}
+#   git checkout ${BRANCH} || git checkout -b ${BRANCH}
 
-  ##
-  # set namespace as jira issue id extracted from branch name and make sure it is lowercase
-  export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
+#   ##
+#   # set namespace as jira issue id extracted from branch name and make sure it is lowercase
+#   export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
 
-else
-  echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
-  exit 1
-fi
+# else
+#   echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
+#   exit 1
+# fi
+
+
+git checkout  auto-sync-image
 
 getValue(){
     echo ${1} | base64 --decode | jq -r ${2}
