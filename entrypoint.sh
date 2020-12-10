@@ -151,7 +151,9 @@ git add -A
 ## If there is nothing to commit exit without fail to continue
 # this will happan if you running a deployment manually for a specific commit 
 # so there will be no changes in the compiled manifests since no new docker image created
-git commit -am "recompiled deployment manifests" || exit 0
+
+git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests" || exit 0
+
 echo ">>> git push --set-upstream origin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
 
