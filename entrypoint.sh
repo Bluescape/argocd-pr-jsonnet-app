@@ -54,10 +54,11 @@ export ON_DEMAND_INSTANCE=false
 if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
   export BRANCH=master
   git checkout ${BRANCH} 
-  TAG=${PR_REF#refs/*/}
-  export RELEASE_NO=`echo ${TAG} | awk -F"-" '{print $1}'`
-  export RC_NO=`echo ${TAG} | awk -F"-" '{print $2}'`
-  export TAG="${TAG//\//-}-release"
+  RELEASE_NO_TAG=${PR_REF#refs/*/}
+  export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
+  export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
+  export TAG="${TAG}-release-${RELEASE_NO_TAG}"
+
 # Deploy to staging if branch is develop, release, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
