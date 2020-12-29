@@ -126,7 +126,7 @@ EOF
 
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-echo ">>> ${cluster} ${namespace}  compile start"
+echo ">>> ${CLUSTER} ${NAMESPACE} compile start"
   compileManifest ${CLUSTER} ${NAMESPACE}
 else  
   clusters=`cat images-auto-sync.json`
@@ -153,14 +153,14 @@ git add -A
 # this will happan if you running a deployment manually for a specific commit 
 # so there will be no changes in the compiled manifests since no new docker image created
 
-git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests" || exit 0
+git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
 
 echo ">>> git push --set-upstream origin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-echo ">>> ${cluster} ${namespace}  deployement start"
-  deployManifest ${cluster} ${namespace} 
+  echo ">>> ${CLUSTER} ${NAMESPACE}  deployement start"
+  deployManifest ${CLUSTER} ${NAMESPACE}
 fi
 
 echo ">>> Completed"
