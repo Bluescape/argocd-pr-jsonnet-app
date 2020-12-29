@@ -126,8 +126,8 @@ EOF
 
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
+echo ">>> ${cluster} ${namespace}  compile start"
   compileManifest ${CLUSTER} ${NAMESPACE}
-  deployManifest ${cluster} ${namespace} 
 else  
   clusters=`cat images-auto-sync.json`
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
@@ -157,6 +157,11 @@ git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests" || exit 0
 
 echo ">>> git push --set-upstream origin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
+
+if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
+echo ">>> ${cluster} ${namespace}  deployement start"
+  deployManifest ${cluster} ${namespace} 
+fi
 
 echo ">>> Completed"
 
