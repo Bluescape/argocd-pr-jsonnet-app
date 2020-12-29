@@ -126,7 +126,6 @@ EOF
 
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-echo ">>> ${CLUSTER} ${NAMESPACE} compile start"
   compileManifest ${CLUSTER} ${NAMESPACE}
 else  
   clusters=`cat images-auto-sync.json`
@@ -141,7 +140,6 @@ else
        if [[ ${RELEASE_NO} = ${release} ]];  then
            echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Namespace=${namespace} >>>>"
           compileManifest ${cluster} ${namespace} 
-          # deployManifest ${cluster} ${namespace} 
         fi
       fi
   done
