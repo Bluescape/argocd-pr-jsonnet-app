@@ -103,6 +103,7 @@ fi
 
 
 deployManifest(){
+echo "<<<< ${2} mame space , ${1}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
         kind: Application
         apiVersion: argoproj.io/v1alpha1
