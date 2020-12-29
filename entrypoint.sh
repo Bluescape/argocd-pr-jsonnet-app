@@ -103,7 +103,7 @@ fi
 
 
 deployManifest(){
-echo "<<<< ${2} mame space , ${1}"
+echo ">>> deployement start Cluster:${1}, namespace: ${2}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
         kind: Application
         apiVersion: argoproj.io/v1alpha1
@@ -157,7 +157,6 @@ echo ">>> git push --set-upstream origin ${BRANCH}"
 git push --set-upstream origin ${BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-  echo ">>> ${CLUSTER} ${NAMESPACE}  deployement start"
   deployManifest ${CLUSTER} ${NAMESPACE}
 fi
 
