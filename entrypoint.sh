@@ -93,6 +93,8 @@ getValue(){
 cd jsonnet/${ORG}
 
 compileManifest(){
+  echo "<<<< Compile manifest deploy Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
+
 if CLUSTER=${1} DOMAIN=${DOMAIN} NAMESPACE=${2} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
     echo "Compile succeeded"
 else
