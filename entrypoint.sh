@@ -12,6 +12,7 @@ AWS_ACCESS_KEY_ID=${9}
 AWS_SECRET_ACCESS_KEY=${10}
 AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
+AWS_EKS_CLUSTER_NAME=${13}
 
 echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
@@ -29,7 +30,7 @@ aws configure set source_profile default
 if [[ ${CLUSTER} = 'preprod' ]];  then
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 else
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
 fi
 export KUBECONFIG=/kubeconfig
 
