@@ -29,6 +29,7 @@ aws configure set source_profile default
 if [[ ${CLUSTER} = 'preprod' ]];  then
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
 else
+echo "AWS_EKS_CLUSTER_NAME --> ${AWS_EKS_CLUSTER_NAME}"
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
 fi
 export KUBECONFIG=/kubeconfig
