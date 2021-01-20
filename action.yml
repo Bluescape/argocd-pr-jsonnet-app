@@ -37,6 +37,9 @@ inputs:
   aws_org_id:
     description: 'AWS_ORG_ID'
     required: true
+  aws_eks_cluster_name:
+    description: 'AWS_EKS_CLUSTER_NAME'
+    required: true      
 runs:
   using: 'docker'
   image: 'Dockerfile'
