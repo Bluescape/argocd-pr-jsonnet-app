@@ -56,3 +56,4 @@ runs:
     - ${{ inputs.aws_secret_access_key }}
     - ${{ inputs.aws_default_region }}
     - ${{ inputs.aws_org_id }}
+    - ${{ inputs.aws_eks_cluster_name }}
