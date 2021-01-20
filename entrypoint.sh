@@ -12,6 +12,7 @@ AWS_ACCESS_KEY_ID=${9}
 AWS_SECRET_ACCESS_KEY=${10}
 AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
+AWS_EKS_CLUSTER_NAME=${13}
 
 echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
