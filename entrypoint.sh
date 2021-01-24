@@ -53,7 +53,7 @@ export ON_DEMAND_INSTANCE=false
 
 # Tag for relase
 if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
-  export BRANCH=master
+  export BRANCH=release
   git checkout ${BRANCH} 
   RELEASE_NO_TAG=${PR_REF#refs/*/}
   export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
