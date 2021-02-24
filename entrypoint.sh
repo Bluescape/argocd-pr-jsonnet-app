@@ -14,7 +14,7 @@ AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
 AWS_EKS_CLUSTER_NAME=${13}
 
-SOURCE_BRANCH=master
+SOURCE_BRANCH=ci-fix
 TARGET_BRANCH=dev
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
@@ -29,7 +29,7 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
-  export SOURCE_BRANCH=master
+  export SOURCE_BRANCH=ci-fix
   export TARGET_BRANCH=dev
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
