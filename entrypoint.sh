@@ -122,7 +122,7 @@ kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
             server: 'https://kubernetes.default.svc'
           project: default
           source:
-            path: jsonnet/${ORG}/clusters/${1}/manifests
+            path: jsonnet/${ORG}/environments/dev/${1}/manifests
             repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
             targetRevision: ${TARGET_BRANCH}
           syncPolicy:
@@ -132,7 +132,7 @@ EOF
 
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-  compileManifest alpha
+  compileManifest ${NAMESPACE}
 else  
   clusters=`cat ./environments/${TARGET}/${TARGET}.json`
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
