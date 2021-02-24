@@ -151,9 +151,10 @@ git add -A
 
 git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
 
-echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
+
 git checkout  ${TARGET_BRANCH}
 git rebase -Xours ${SOURCE_BRANCH}
+echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
 git push --set-upstream origin ${TARGET_BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
