@@ -14,6 +14,18 @@ AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
 AWS_EKS_CLUSTER_NAME=${13}
 
+
+echo ${AWS_DEFAULT_REGION}
+echo ${INPUT_AWS_ACCESS_KEY_ID}
+aws configure set region ${AWS_DEFAULT_REGION}
+aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
+aws configure set source_profile default
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
+export KUBECONFIG=/kubeconfig
+echo ">>>> kubeconfig created"
+
 SOURCE_BRANCH=ci-fix
 TARGET_BRANCH=alpha
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
@@ -98,17 +110,6 @@ fi
 
 # deploy manifest only on-demand instance
 deployManifest(){
-echo ${AWS_DEFAULT_REGION}
-echo ${INPUT_AWS_ACCESS_KEY_ID}
-aws configure set region ${AWS_DEFAULT_REGION}
-aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
-aws configure set source_profile default
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
-export KUBECONFIG=/kubeconfig
-echo ">>>> kubeconfig created"
-
 echo ">>> deployement start Cluster:${1}, namespace: ${2}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
         kind: Application
@@ -155,7 +156,7 @@ git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
 git checkout  ${TARGET_BRANCH}
 git rebase -Xours ${SOURCE_BRANCH}
 echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
-git push --set-upstream origin ${TARGET_BRANCH}
+git push --set-upstream -f origin ${TARGET_BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   deployManifest alpha ${NAMESPACE}
