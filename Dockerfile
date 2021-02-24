@@ -3,11 +3,13 @@ FROM itamarperez/jsonnet-ci
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /entrypoint.sh
-RUN apt-get update
-RUN apt-get upgrade
-RUN apt-get install git -y
+RUN echo "deb http://ftp.us.debian.org/debian testing main contrib non-free" >> /etc/apt/sources.list \
+         &&      apt-get update              \
+         &&      apt-get install -y git      \
+         &&      apt-get clean all
+
 # Install kubectl
-RUN apt-get update && apt-get install -y bash curl git awscli
+
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/bin/kubectl
