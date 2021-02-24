@@ -56,15 +56,16 @@ elif [[ ${CLUSTER} = 'prod' ]];  then
 fi
 
 
-git config --local user.name "GitHub Action"
-git config --local user.email "action@github.com"
-git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
-git fetch --all
 
 echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git 
 cd ${INFRA_REPO}
+git config --local user.name "GitHub Action"
+git config --local user.email "action@github.com"
+git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
+git fetch --all
+
 git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
 git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
 git restore --source ${TARGET_BRANCH} jsonnet/${ORG}/environments/images.json 
