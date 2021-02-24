@@ -12,7 +12,7 @@ RUN echo "deb http://ftp.us.debian.org/debian testing main contrib non-free" >> 
          &&      apt-get clean all
 
 # Install kubectl
-
+RUN apt-get update && apt-get install -y bash curl git awscli
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/bin/kubectl
