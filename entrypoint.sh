@@ -68,7 +68,7 @@ git fetch --all
 
 git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
 git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
-git restore --source ${TARGET_BRANCH} jsonnet/${ORG}/environments/images.json 
+git restore --source ${TARGET_BRANCH} jsonnet/${ORG}/images.json 
 
 echo ">>>> Compiling manifests for"
 echo "ref ${PR_REF}"
