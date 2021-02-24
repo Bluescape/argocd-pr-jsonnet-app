@@ -3,7 +3,9 @@ FROM itamarperez/jsonnet-ci
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /entrypoint.sh
-RUN apt-get install git
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install git -y
 # Install kubectl
 RUN apt-get update && apt-get install -y bash curl git awscli
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
