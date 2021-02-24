@@ -15,7 +15,7 @@ AWS_ORG_ID=${12}
 AWS_EKS_CLUSTER_NAME=${13}
 
 SOURCE_BRANCH=ci-fix
-TARGET_BRANCH=dev
+TARGET_BRANCH=alpha
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
 
@@ -30,7 +30,7 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
   export SOURCE_BRANCH=ci-fix
-  export TARGET_BRANCH=dev
+  export TARGET_BRANCH=alpha
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
   ##
