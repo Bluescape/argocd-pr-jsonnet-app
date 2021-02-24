@@ -87,7 +87,7 @@ cd jsonnet/${ORG}
 compileManifest(){
   echo "<<<< Compile manifest deploy Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
 
-if TARGET=${TARGET} DOMAIN=${DOMAIN} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+if ON_DEMAND_INSTANCE=${ON_DEMAND_INSTANCE} TARGET=${TARGET} DOMAIN=${DOMAIN} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
     echo "Compile succeeded"
 else
     echo "Compile failed"
