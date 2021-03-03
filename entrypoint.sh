@@ -41,7 +41,7 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
-  export SOURCE_BRANCH=ci-fix
+  export SOURCE_BRANCH=master
   export TARGET_BRANCH=alpha
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
