@@ -31,8 +31,8 @@ TARGET_BRANCH=alpha
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
 
-# Tag for release RC and production tag
-if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then 
+# Tag for release RC/production tag or merged relase branhc
+if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] || [[ ${PR_REF} =~ ^refs/heads/(release)$ ]];  then 
   export SOURCE_BRANCH=release
   RELEASE_NO_TAG=${PR_REF#refs/*/}
   export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
