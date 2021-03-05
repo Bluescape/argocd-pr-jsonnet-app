@@ -27,7 +27,7 @@ aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssum
 export KUBECONFIG=/kubeconfig
 echo ">>>> kubeconfig created"
 
-SOURCE_BRANCH=ci-fix
+SOURCE_BRANCH=master
 TARGET_BRANCH=alpha
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
@@ -36,9 +36,11 @@ export ON_DEMAND_INSTANCE=false
 if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] || [[ ${PR_REF} =~ ^refs/heads/(release)$ ]];  then 
   export SOURCE_BRANCH=release
   RELEASE_NO_TAG=${PR_REF#refs/*/}
+  if [[ ${IMAGE} ]];  then
   export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
   export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
-  export TAG="${TAG}-release-${RELEASE_NO_TAG}"
+  export  dd="${TAG}-release-${RELEASE_NO_TAG}"
+  fi
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
