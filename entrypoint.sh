@@ -37,9 +37,9 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] || [[ ${PR_REF} =~ ^refs/heads/(release)
   export SOURCE_BRANCH=release
   RELEASE_NO_TAG=${PR_REF#refs/*/}
   if [[ ${IMAGE} ]];  then
-  export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
-  export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
-  export  dd="${TAG}-release-${RELEASE_NO_TAG}"
+    export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
+    export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
+    export  TAG="${TAG}-release-${RELEASE_NO_TAG}"
   fi
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
