@@ -171,6 +171,7 @@ if [[ ${COMPILE_MANIFEST} = 'true' ]] ||   [[ ${ON_DEMAND_INSTANCE} = 'true' ]];
   git add -A
   git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
   echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
+  git pull --rebase
   git push --set-upstream origin ${TARGET_BRANCH}
 fi    
 
