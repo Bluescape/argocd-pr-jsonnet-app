@@ -83,10 +83,6 @@ git fetch --all
 
 echo "Checkout Source Branch : ${SOURCE_BRANCH}"
 git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
-echo "Checkout Target Branch : ${TARGET_BRANCH}"
-git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
-echo "Rebase with ${SOURCE_BRANCH}"
-git rebase  ${SOURCE_BRANCH}
 
 getValue(){
   echo ${1} | base64 --decode | jq -r ${2}
@@ -147,31 +143,39 @@ EOF
 
 #update image for all cluster 
 updateImage
-
-if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-  compileManifest ${NAMESPACE}
-elif [[ ${COMPILE_MANIFEST} = 'true' ]]; then
-  clusters=`cat ./environments/${TARGET}/${TARGET}.json`
-  for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
-      environment=$(getValue ${row} '.environment')
-      cluster=$(getValue ${row} '.cluster')
-      echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Environment=${environment} >>>>"
-      compileManifest ${environment} 
-  done
-fi  
-
 git add -A
-          
-## If there is nothing to commit exit without fail to continue
-# this will happan if you running a deployment manually for a specific commit 
-# so there will be no changes in the compiled manifests since no new docker image created
 
-git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
+git commit -am " Image: ${IMAGE}  TAG=${TAG} Image updated"
+
+echo ">>> git push --set-upstream origin ${SOURCE_BRANCH}"
+git push --set-upstream origin ${SOURCE_BRANCH}
 
 
-echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
-git push --set-upstream origin ${TARGET_BRANCH}
+if [[ ${COMPILE_MANIFEST} = 'true' ]] ||   [[ ${ON_DEMAND_INSTANCE} = 'true' ]]; then 
+  echo "Checkout Target Branch : ${TARGET_BRANCH}"
+  git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
+  echo "Rebase with ${SOURCE_BRANCH}"
+  git rebase  ${SOURCE_BRANCH}
 
+  if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
+    compileManifest ${NAMESPACE}
+  elif [[ ${COMPILE_MANIFEST} = 'true' ]]; then
+    clusters=`cat ./environments/${TARGET}/${TARGET}.json`
+    for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
+        environment=$(getValue ${row} '.environment')
+        cluster=$(getValue ${row} '.cluster')
+        echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Environment=${environment} >>>>"
+        compileManifest ${environment} 
+    done
+  fi
+  git add -A
+  git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
+  echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
+  git push --set-upstream origin ${TARGET_BRANCH}
+fi    
+
+
+# deployment call only for ondemand instance (alpha)
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   deployManifest alpha ${NAMESPACE}
 fi
