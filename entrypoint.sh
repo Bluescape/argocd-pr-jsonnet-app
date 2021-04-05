@@ -81,16 +81,12 @@ git config --local user.email "action@github.com"
 git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
 git fetch --all
 
+echo "Checkout Source Branch : ${SOURCE_BRANCH}"
 git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
+echo "Checkout Target Branch : ${TARGET_BRANCH}"
 git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
-
+echo "Rebase with ${SOURCE_BRANCH}"
 git rebase  ${SOURCE_BRANCH}
-
-echo ">>>> Compiling manifests for"
-echo "ref ${PR_REF}"
-echo "cluster ${CLUSTER}"
-echo "domain ${DOMAIN}"
-echo "image ${IMAGE}:${TAG}"
 
 getValue(){
   echo ${1} | base64 --decode | jq -r ${2}
@@ -100,6 +96,7 @@ cd jsonnet/${ORG}
 
 
 updateImage(){
+  echo "Image update Image: ${IMAGE}, Tag: ${TAG}"
   if IMAGE=${IMAGE} TAG=${TAG} ./update_image.sh ; then
     echo "Image update succeeded"
 else
@@ -109,7 +106,12 @@ fi
 }
 
 compileManifest(){
-  echo "<<<< Compile manifest deploy Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
+echo ">>>> Compiling manifests for"
+echo "ref ${PR_REF}"
+echo "cluster ${CLUSTER}"
+echo "namespace ${1}"
+
+echo "<<<< Compile manifest Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
 
 if ON_DEMAND_INSTANCE=${ON_DEMAND_INSTANCE} TARGET=${TARGET} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
     echo "Compile succeeded"
@@ -148,7 +150,7 @@ updateImage
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   compileManifest ${NAMESPACE}
-else if [[ ${COMPILE_MANIFEST} = 'true' ]]; then
+elif [[ ${COMPILE_MANIFEST} = 'true' ]]; then
   clusters=`cat ./environments/${TARGET}/${TARGET}.json`
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
