@@ -39,7 +39,11 @@ inputs:
     required: true
   aws_eks_cluster_name:
     description: 'AWS_EKS_CLUSTER_NAME'
-    required: true      
+    required: true  
+  compile_manifest:
+    description: 'COMPILE_MANIFEST'
+    required: false
+    default: false          
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -57,3 +61,4 @@ runs:
     - ${{ inputs.aws_default_region }}
     - ${{ inputs.aws_org_id }}
     - ${{ inputs.aws_eks_cluster_name }}
+    - ${{ inputs.compile_manifest }}

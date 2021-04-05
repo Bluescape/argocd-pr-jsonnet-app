@@ -13,7 +13,7 @@ AWS_SECRET_ACCESS_KEY=${10}
 AWS_DEFAULT_REGION=${11}
 AWS_ORG_ID=${12}
 AWS_EKS_CLUSTER_NAME=${13}
-
+COMPILE_MANIFEST=${14}
 
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
@@ -39,7 +39,7 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] || [[ ${PR_REF} =~ ^refs/heads/(release)
   if [[ ${IMAGE} ]];  then
     export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
     export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
-    export  TAG="${TAG}-release-${RELEASE_NO_TAG}"
+    export TAG="${TAG}-release-${RELEASE_NO_TAG}"
   fi
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
@@ -48,7 +48,6 @@ elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
   export TARGET_BRANCH=alpha
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
-  ##
   # If branch does not exist create it
   export SOURCE_BRANCH=${PR_REF}
   export TARGET_BRANCH=${PR_REF}
@@ -60,7 +59,7 @@ else
   exit 1
 fi
 
-TARGET=dev
+TARGET = dev
 # target and branch set
 if [[ ${CLUSTER} = 'preprod' ]];  then
   export TARGET=preprod
@@ -76,14 +75,16 @@ echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git 
 cd ${INFRA_REPO}
+
 git config --local user.name "GitHub Action"
 git config --local user.email "action@github.com"
 git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
 git fetch --all
 
-git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
 git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
-git restore --source ${TARGET_BRANCH} jsonnet/${ORG}/images.json 
+git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
+
+git rebase  ${SOURCE_BRANCH}
 
 echo ">>>> Compiling manifests for"
 echo "ref ${PR_REF}"
@@ -91,18 +92,26 @@ echo "cluster ${CLUSTER}"
 echo "domain ${DOMAIN}"
 echo "image ${IMAGE}:${TAG}"
 
-
-
 getValue(){
-    echo ${1} | base64 --decode | jq -r ${2}
+  echo ${1} | base64 --decode | jq -r ${2}
 }
 
 cd jsonnet/${ORG}
 
+
+updateImage(){
+  if IMAGE=${IMAGE} TAG=${TAG} ./update_image.sh ; then
+    echo "Image update succeeded"
+else
+    echo "Image update failed"
+    exit 1
+fi 
+}
+
 compileManifest(){
   echo "<<<< Compile manifest deploy Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
 
-if ON_DEMAND_INSTANCE=${ON_DEMAND_INSTANCE} TARGET=${TARGET} DOMAIN=${DOMAIN} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+if ON_DEMAND_INSTANCE=${ON_DEMAND_INSTANCE} TARGET=${TARGET} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
     echo "Compile succeeded"
 else
     echo "Compile failed"
@@ -134,10 +143,12 @@ kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
 EOF
 }
 
+#update image for all cluster 
+updateImage
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   compileManifest ${NAMESPACE}
-else  
+else if [[ ${COMPILE_MANIFEST} = 'true' ]]; then
   clusters=`cat ./environments/${TARGET}/${TARGET}.json`
   for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
       environment=$(getValue ${row} '.environment')
@@ -156,10 +167,8 @@ git add -A
 git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
 
 
-git checkout  ${TARGET_BRANCH}
-git rebase -Xours ${SOURCE_BRANCH}
 echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
-git push --set-upstream -f origin ${TARGET_BRANCH}
+git push --set-upstream origin ${TARGET_BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
   deployManifest alpha ${NAMESPACE}
