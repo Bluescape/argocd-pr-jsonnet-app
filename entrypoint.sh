@@ -59,7 +59,7 @@ else
   exit 1
 fi
 
-TARGET = dev
+TARGET=dev
 # target and branch set
 if [[ ${CLUSTER} = 'preprod' ]];  then
   export TARGET=preprod
