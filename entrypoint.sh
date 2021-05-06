@@ -4,74 +4,63 @@ GITHUB_PAT=${1}
 ORG=${2}
 INFRA_REPO=${3}
 PR_REF=${4}
-CLUSTER=${5}
-DOMAIN=${6}
-IMAGE=${7}
-TAG=${8}
-AWS_ACCESS_KEY_ID=${9}
-AWS_SECRET_ACCESS_KEY=${10}
-AWS_DEFAULT_REGION=${11}
-AWS_ORG_ID=${12}
-AWS_EKS_CLUSTER_NAME=${13}
-COMPILE_MANIFEST=${14}
+IMAGE=${5}
+SHA=${6}
+AWS_ACCESS_KEY_ID=${7}
+AWS_SECRET_ACCESS_KEY=${8}
+AWS_DEFAULT_REGION=${9}
+AWS_ORG_ID=${10}
+AWS_EKS_CLUSTER_NAME=${11}
 
-echo ${AWS_DEFAULT_REGION}
-echo ${INPUT_AWS_ACCESS_KEY_ID}
-aws configure set region ${AWS_DEFAULT_REGION}
-aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
-aws configure set source_profile default
-
-aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
-export KUBECONFIG=/kubeconfig
-echo ">>>> kubeconfig created"
 
 SOURCE_BRANCH=master
 TARGET_BRANCH=alpha
+IMAGE_BRANCH=alpha
+
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
+export TARGET=dev
 
-# Tag for release RC/production tag or merged relase branhc
-if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] || [[ ${PR_REF} =~ ^refs/heads/(release)$ ]];  then 
+# Tag for release RC tag
+if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] then 
   export SOURCE_BRANCH=release
+  export TARGET_BRANCH=preprod
+  export IMAGE_BRANCH=release
+  export TARGET=preprod
   RELEASE_NO_TAG=${PR_REF#refs/*/}
   if [[ ${IMAGE} ]];  then
-    export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
-    export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
-    export TAG="${TAG}-release-${RELEASE_NO_TAG}"
+    export TAG="${SHA}-release-${RELEASE_NO_TAG}"
   fi
 # Deploy to staging if branch is develop, main or master
 # Note: infrastrucure branch is using master  
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
   export SOURCE_BRANCH=master
   export TARGET_BRANCH=alpha
+  export IMAGE_BRANCH=alpha
+  export TARGET=dev
+  if [[ ${IMAGE} ]];  then
+    export TAG="${SHA}"
+  fi
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
   # If branch does not exist create it
   export SOURCE_BRANCH=${PR_REF}
   export TARGET_BRANCH=${PR_REF}
+  export IMAGE_BRANCH=${PR_REF}
+  export TARGET=dev
+  export ON_DEMAND_INSTANCE=true
+  if [[ ${IMAGE} ]];  then
+    export TAG="${SHA}"
+  fi
   # set namespace as jira issue id extracted from branch name and make sure it is lowercase
   export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
-  export ON_DEMAND_INSTANCE=true
 else
   echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release,develop"
   exit 1
 fi
 
-TARGET=dev
-# target and branch set
-if [[ ${CLUSTER} = 'preprod' ]];  then
-  export TARGET=preprod
-  export TARGET_BRANCH=preprod
-elif [[ ${CLUSTER} = 'prod' ]];  then
-  export TARGET=prod
-  export TARGET_BRANCH=${RELEASE_NO}
-fi
 
-
-
-echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
+echo "<<<< TARGET:${TARGET} IMAGE:${IMAGE} PR_REF:{$PR_REF} TAG:${TAG}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
 git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git 
 cd ${INFRA_REPO}
@@ -80,16 +69,6 @@ git config --local user.name "GitHub Action"
 git config --local user.email "action@github.com"
 git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
 git fetch --all
-
-echo "Checkout Source Branch : ${SOURCE_BRANCH}"
-git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
-
-getValue(){
-  echo ${1} | base64 --decode | jq -r ${2}
-}
-
-cd jsonnet/${ORG}
-
 
 updateImage(){
   echo "Image update Image: ${IMAGE}, Tag: ${TAG}"
@@ -120,6 +99,18 @@ fi
 
 # deploy manifest only on-demand instance
 deployManifest(){
+echo ${AWS_DEFAULT_REGION}
+echo ${INPUT_AWS_ACCESS_KEY_ID}
+aws configure set region ${AWS_DEFAULT_REGION}
+aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
+aws configure set source_profile default
+
+aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
+export KUBECONFIG=/kubeconfig
+echo ">>>> kubeconfig created"
+
 echo ">>> deployement start Cluster:${1}, namespace: ${2}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
         kind: Application
@@ -141,30 +132,39 @@ kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
 EOF
 }
 
+getValue(){
+  echo ${1} | base64 --decode | jq -r ${2}
+}
+
+
 #update image for all cluster 
-updateImage
-git add -A
 
-git commit -am " Image: ${IMAGE}  TAG=${TAG} Image updated"
+cd jsonnet/${ORG}
+if [[ ${SOURCE_BRANCH} = 'release' ]];  then
+  echo "Checkout Source Branch : ${SOURCE_BRANCH}"
+  git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
+  updateImage
+  git add -A
+  git commit -am " Image: ${IMAGE}  TAG=${TAG} Image updated"
 
-echo ">>> git push --set-upstream origin ${SOURCE_BRANCH}"
-git push --set-upstream origin ${SOURCE_BRANCH}
+  echo ">>> git push --set-upstream origin ${SOURCE_BRANCH}"
+  git push --set-upstream origin ${SOURCE_BRANCH}
+fi
 
 
-if [[ ${COMPILE_MANIFEST} = 'true' ]] ||   [[ ${ON_DEMAND_INSTANCE} = 'true' ]]; then 
-  echo "Checkout Target Branch : ${TARGET_BRANCH}"
-  git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
-  echo "Rebase with ${SOURCE_BRANCH}"
-  git rebase  ${SOURCE_BRANCH}
+echo "Checkout Target Branch : ${TARGET_BRANCH}"
+git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
+echo "Rebase with ${SOURCE_BRANCH}"
+git rebase  ${SOURCE_BRANCH}
 
-  if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
+if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
     compileManifest ${NAMESPACE}
-  elif [[ ${COMPILE_MANIFEST} = 'true' ]]; then
+else
     clusters=`cat ./environments/${TARGET}/${TARGET}.json`
     for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
         environment=$(getValue ${row} '.environment')
         cluster=$(getValue ${row} '.cluster')
-        echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Environment=${environment} >>>>"
+        echo "<<<< Auto deploy Cluester=${cluster} Environment=${environment} >>>>"
         compileManifest ${environment} 
     done
   fi
