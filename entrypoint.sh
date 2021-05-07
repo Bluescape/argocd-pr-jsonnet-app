@@ -22,7 +22,7 @@ export ON_DEMAND_INSTANCE=false
 export TARGET=dev
 
 # Tag for release RC tag
-if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]] then 
+if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then 
   export SOURCE_BRANCH=release
   export TARGET_BRANCH=preprod
   export IMAGE_BRANCH=release
