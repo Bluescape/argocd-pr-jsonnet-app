@@ -167,13 +167,13 @@ else
         echo "<<<< Auto deploy Cluester=${cluster} Environment=${environment} >>>>"
         compileManifest ${environment} 
     done
-  fi
-  git add -A
-  git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
-  echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
-  git pull --rebase
-  git push --set-upstream origin ${TARGET_BRANCH}
-fi    
+fi
+git add -A
+git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
+echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
+git pull --rebase
+git push --set-upstream origin ${TARGET_BRANCH}
+  
 
 
 # deployment call only for ondemand instance (alpha)
