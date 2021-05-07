@@ -97,8 +97,6 @@ fi
 }
 
 
-# deploy manifest only on-demand instance
-deployManifest(){
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
 aws configure set region ${AWS_DEFAULT_REGION}
@@ -111,6 +109,8 @@ aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssum
 export KUBECONFIG=/kubeconfig
 echo ">>>> kubeconfig created"
 
+# deploy manifest only on-demand instance
+deployManifest(){
 echo ">>> deployement start Cluster:${1}, namespace: ${2}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
         kind: Application
