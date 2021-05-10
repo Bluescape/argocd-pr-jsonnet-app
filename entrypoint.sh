@@ -15,7 +15,6 @@ AWS_EKS_CLUSTER_NAME=${11}
 
 SOURCE_BRANCH=master
 TARGET_BRANCH=alpha
-IMAGE_BRANCH=alpha
 
 REGEX="[a-zA-Z]+-[0-9]{1,5}"
 export ON_DEMAND_INSTANCE=false
@@ -25,7 +24,6 @@ export TARGET=dev
 if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then 
   export SOURCE_BRANCH=release
   export TARGET_BRANCH=preprod
-  export IMAGE_BRANCH=release
   export TARGET=preprod
   RELEASE_NO_TAG=${PR_REF#refs/*/}
   if [[ ${IMAGE} ]];  then
@@ -36,7 +34,6 @@ if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
 elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
   export SOURCE_BRANCH=master
   export TARGET_BRANCH=alpha
-  export IMAGE_BRANCH=alpha
   export TARGET=dev
   if [[ ${IMAGE} ]];  then
     export TAG="${SHA}"
@@ -44,9 +41,9 @@ elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
 # checking if this is a feature branch or release
 elif [[ ${PR_REF} =~ ${REGEX} ]]; then
   # If branch does not exist create it
-  export SOURCE_BRANCH=${PR_REF}
-  export TARGET_BRANCH=${PR_REF}
-  export IMAGE_BRANCH=${PR_REF}
+  export BRANCH=${PR_REF#refs/heads/*}
+  export SOURCE_BRANCH=${BRANCH}
+  export TARGET_BRANCH=${BRANCH}
   export TARGET=dev
   export ON_DEMAND_INSTANCE=true
   if [[ ${IMAGE} ]];  then
