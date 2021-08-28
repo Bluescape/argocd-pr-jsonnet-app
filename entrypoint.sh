@@ -4,20 +4,95 @@ GITHUB_PAT=${1}
 ORG=${2}
 INFRA_REPO=${3}
 PR_REF=${4}
-CLUSTER=${5}
-DOMAIN=${6}
-IMAGE=${7}
-TAG=${8}
-AWS_ACCESS_KEY_ID=${9}
-AWS_SECRET_ACCESS_KEY=${10}
-AWS_DEFAULT_REGION=${11}
-AWS_ORG_ID=${12}
-AWS_EKS_CLUSTER_NAME=${13}
+IMAGE=${5}
+SHA=${6}
+AWS_ACCESS_KEY_ID=${7}
+AWS_SECRET_ACCESS_KEY=${8}
+AWS_DEFAULT_REGION=${9}
+AWS_ORG_ID=${10}
+AWS_EKS_CLUSTER_NAME=${11}
 
-echo "<<<< TAG:${TAG} IMAGE:${IMAGE} CLUSTER:${CLUSTER}  PR_REF:{$PR_REF}"
+
+SOURCE_BRANCH=master
+TARGET_BRANCH=alpha
+
+REGEX="[a-zA-Z]+-[0-9]{1,5}"
+export ON_DEMAND_INSTANCE=false
+export TARGET=dev
+
+# Tag for release RC tag
+if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then 
+  export SOURCE_BRANCH=release
+  export TARGET_BRANCH=preprod
+  export TARGET=preprod
+  RELEASE_NO_TAG=${PR_REF#refs/*/}
+  if [[ ${IMAGE} ]];  then
+    export TAG="${SHA}-release-${RELEASE_NO_TAG}"
+  fi
+# Deploy to staging if branch is develop, main or master
+# Note: infrastrucure branch is using master  
+elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|main)$ ]]; then
+  export SOURCE_BRANCH=master
+  export TARGET_BRANCH=alpha
+  export TARGET=dev
+  if [[ ${IMAGE} ]];  then
+    export TAG="${SHA}"
+  fi
+# checking if this is a feature branch or release
+elif [[ ${PR_REF} =~ ${REGEX} ]]; then
+  # If branch does not exist create it
+  export BRANCH=${PR_REF#refs/heads/*}
+  export SOURCE_BRANCH=${BRANCH}
+  export TARGET_BRANCH=${BRANCH}
+  export TARGET=dev
+  export ON_DEMAND_INSTANCE=true
+  if [[ ${IMAGE} ]];  then
+    export TAG="${SHA}"
+  fi
+  # set namespace as jira issue id extracted from branch name and make sure it is lowercase
+  export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
+else
+  echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release,develop"
+  exit 1
+fi
+
+
+echo "<<<< TARGET:${TARGET} IMAGE:${IMAGE} PR_REF:{$PR_REF} TAG:${TAG}"
 echo "<<<< Cloning infrastructure repo ${ORG}/${INFRA_REPO}"
-git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git
-cd infrastructure
+git clone https://${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}.git 
+cd ${INFRA_REPO}
+
+git config --local user.name "GitHub Action"
+git config --local user.email "action@github.com"
+git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
+git fetch --all
+
+updateImage(){
+  echo "Image update Image: ${IMAGE}, Tag: ${TAG}"
+  if IMAGE=${IMAGE} TAG=${TAG} ./update_image.sh ; then
+    echo "Image update succeeded"
+else
+    echo "Image update failed"
+    exit 1
+fi 
+}
+
+compileManifest(){
+echo ">>>> Compiling manifests for"
+echo "ref ${PR_REF}"
+echo "cluster ${CLUSTER}"
+echo "namespace ${1}"
+
+echo "<<<< Compile manifest Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
+
+if ON_DEMAND_INSTANCE=${ON_DEMAND_INSTANCE} TARGET=${TARGET} NAMESPACE=${1} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
+    echo "Compile succeeded"
+else
+    echo "Compile failed"
+    exit 1
+fi 
+}
+
 
 echo ${AWS_DEFAULT_REGION}
 echo ${INPUT_AWS_ACCESS_KEY_ID}
@@ -27,85 +102,11 @@ aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set role_arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole"
 aws configure set source_profile default
 
-if [[ ${CLUSTER} = 'preprod' ]];  then
-echo "preprod always will use autosync no deploy required"
-# aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="alpha-b" --kubeconfig /kubeconfig --profile default
-else
 aws eks update-kubeconfig --role-arn "arn:aws:iam::${AWS_ORG_ID}:role/adminAssumeRole" --name="${AWS_EKS_CLUSTER_NAME}"  --kubeconfig /kubeconfig --profile default
-fi
 export KUBECONFIG=/kubeconfig
-
 echo ">>>> kubeconfig created"
 
-
-git config --local user.name "GitHub Action"
-git config --local user.email "action@github.com"
-git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${ORG}/${INFRA_REPO}
-git fetch --all
-
-echo ">>>> Compiling manifests for"
-echo "ref ${PR_REF}"
-echo "cluster ${CLUSTER}"
-echo "domain ${DOMAIN}"
-echo "image ${IMAGE}:${TAG}"
-
-REGEX="[a-zA-Z]+-[0-9]{1,5}"
-export ON_DEMAND_INSTANCE=false
-
-# Tag for relase
-if [[ ${PR_REF} =~ ^refs/tags/*.*.*$ ]]; then
-  export BRANCH=release
-  git checkout ${BRANCH} 
-  RELEASE_NO_TAG=${PR_REF#refs/*/}
-  export RELEASE_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $1}'`
-  export RC_NO=`echo ${RELEASE_NO_TAG} | awk -F"-" '{print $2}'`
-  export TAG="${TAG}-release-${RELEASE_NO_TAG}"
-
-# Deploy to staging if branch is develop, release, main or master
-# Note: infrastrucure branch is using master  
-elif [[ ${PR_REF} =~ ^refs/heads/(master|develop|release|main)$ ]]; then
-  export NAMESPACE=staging
-  export RELEASE_NO=latest
-  export BRANCH=master
-  git checkout ${BRANCH} 
-##
-# checking if this is a feature branch or release
-elif [[ ${PR_REF} =~ ${REGEX} ]]; then
-  ##
-  # If branch does not exist create it
-  export BRANCH=${PR_REF}
-  git checkout ${BRANCH} || git checkout -b ${BRANCH}
-
-  ##
-  # set namespace as jira issue id extracted from branch name and make sure it is lowercase
-  export NAMESPACE=$(echo ${BASH_REMATCH[0]} |  tr '[:upper:]' '[:lower:]')
-  export ON_DEMAND_INSTANCE=true
-else
-  echo "<<<< ${PR_REF} cannot be deployed, it is not a feature branch nor a release"
-  exit 1
-fi
-
-# # need to remove after infra  merge
-# git checkout  auto-sync-image
-
-getValue(){
-    echo ${1} | base64 --decode | jq -r ${2}
-}
-
-cd jsonnet/${ORG}
-
-compileManifest(){
-  echo "<<<< Compile manifest deploy Cluester=${1} RELEASE_NO=${2} IMAGE=${IMAGE} TAG=${TAG} >>>>"
-
-if CLUSTER=${1} DOMAIN=${DOMAIN} NAMESPACE=${2} IMAGE=${IMAGE} TAG=${TAG} ./compile.sh ; then
-    echo "Compile succeeded"
-else
-    echo "Compile failed"
-    exit 1
-fi 
-}
-
-
+# deploy manifest only on-demand instance
 deployManifest(){
 echo ">>> deployement start Cluster:${1}, namespace: ${2}"
 kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
@@ -120,48 +121,61 @@ kubectl --kubeconfig=${KUBECONFIG} -n argocd apply -f -<<EOF
             server: 'https://kubernetes.default.svc'
           project: default
           source:
-            path: jsonnet/${ORG}/clusters/${1}/manifests
+            path: jsonnet/${ORG}/environments/dev/${1}/manifests
             repoURL: git@github.com:${ORG}/${INFRA_REPO}.git
-            targetRevision: ${BRANCH}
+            targetRevision: ${TARGET_BRANCH}
           syncPolicy:
             automated: {}
 EOF
 }
 
+getValue(){
+  echo ${1} | base64 --decode | jq -r ${2}
+}
+
+
+#update image for all cluster 
+
+cd jsonnet/${ORG}
+if [[ ${SOURCE_BRANCH} = 'release' ]];  then
+  echo "Checkout Source Branch : ${SOURCE_BRANCH}"
+  git checkout ${SOURCE_BRANCH} || git checkout -b ${SOURCE_BRANCH}
+  updateImage
+  git add -A
+  git commit -am " Image: ${IMAGE}  TAG=${TAG} Image updated"
+
+  echo ">>> git push --set-upstream origin ${SOURCE_BRANCH}"
+  git push --set-upstream origin ${SOURCE_BRANCH}
+fi
+
+
+echo "Checkout Target Branch : ${TARGET_BRANCH}"
+git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
+echo "Rebase with ${SOURCE_BRANCH}"
+git rebase  ${SOURCE_BRANCH}
 
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-  compileManifest ${CLUSTER} ${NAMESPACE}
-else  
-  clusters=`cat images-auto-sync.json`
-  for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
-      environment=$(getValue ${row} '.environment')
-      cluster=$(getValue ${row} '.cluster')
-      namespace=$(getValue ${row} '.namespace')
-      release=$(getValue ${row} '.release')
-     
-      if [[ ${CLUSTER} = ${environment} ]];  then
-      # todo: filter with release & tag compare
-       if [[ ${RELEASE_NO} = ${release} ]];  then
-           echo "<<<< Auto deploy Cluester=${cluster} RELEASE_NO=${RELEASE_NO} RC_NO=${RC_NO} Namespace=${namespace} >>>>"
-          compileManifest ${cluster} ${namespace} 
-        fi
-      fi
-  done
-fi  
-
+    compileManifest ${NAMESPACE}
+else
+    clusters=`cat ./environments/${TARGET}/${TARGET}.json`
+    for row in $(echo "${clusters}" | jq -r '.[] | @base64'); do
+        environment=$(getValue ${row} '.environment')
+        cluster=$(getValue ${row} '.cluster')
+        echo "<<<< Auto deploy Cluester=${cluster} Environment=${environment} >>>>"
+        compileManifest ${environment} 
+    done
+fi
 git add -A
-          
-## If there is nothing to commit exit without fail to continue
-# this will happan if you running a deployment manually for a specific commit 
-# so there will be no changes in the compiled manifests since no new docker image created
-
 git commit -am " Image: ${IMAGE}  TAG=${TAG} &  Recompiled manifests"
+echo ">>> git push --set-upstream origin ${TARGET_BRANCH}"
+git pull --rebase
+git push --set-upstream origin ${TARGET_BRANCH}
+  
 
-echo ">>> git push --set-upstream origin ${BRANCH}"
-git push --set-upstream origin ${BRANCH}
 
+# deployment call only for ondemand instance (alpha)
 if [[ ${ON_DEMAND_INSTANCE} = 'true' ]];  then
-  deployManifest ${CLUSTER} ${NAMESPACE}
+  deployManifest alpha ${NAMESPACE}
 fi
 
 echo ">>> Completed"

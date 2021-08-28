@@ -13,12 +13,6 @@ inputs:
   pr-ref:
     description: 'github.event.pull_request.head.ref'
     required: true
-  cluster:
-    description: 'github.event.deployment.environment'
-    required: true
-  domain:
-    description: 'domain name for the compiled application'
-    required: true
   image:
     description: 'docker image name for the compiled application manifests'
     required: true
@@ -39,7 +33,7 @@ inputs:
     required: true
   aws_eks_cluster_name:
     description: 'AWS_EKS_CLUSTER_NAME'
-    required: true      
+    required: true         
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -48,8 +42,6 @@ runs:
     - ${{ inputs.org }}
     - ${{ inputs.infra-repo}}
     - ${{ inputs.pr-ref }}
-    - ${{ inputs.cluster }}
-    - ${{ inputs.domain }}
     - ${{ inputs.image }}
     - ${{ inputs.tag }}
     - ${{ inputs.aws_access_key_id }}
